@@ -483,14 +483,41 @@ function loadPeriodData() {
     const periodRef = db.ref(`couples/${coupleId}/period`);
     
     periodRef.on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            periodData = data;
+        try {
+            const data = snapshot.val();
+            if (data) {
+                periodData = {
+                    records: data.records || [],
+                    cycle: data.cycle || 30,
+                    currentPeriod: data.currentPeriod || null
+                };
+            } else {
+                // 初始化默认数据
+                periodData = {
+                    records: [],
+                    cycle: 30,
+                    currentPeriod: null
+                };
+            }
+            
+            updatePeriodStatus();
+            updatePeriodHistory();
+            updateCareTips();
+        } catch (error) {
+            console.error('加载经期数据错误:', error);
+            // 使用默认数据
+            periodData = {
+                records: [],
+                cycle: 30,
+                currentPeriod: null
+            };
+            updatePeriodStatus();
+            updatePeriodHistory();
+            updateCareTips();
         }
-        
-        updatePeriodStatus();
-        updatePeriodHistory();
-        updateCareTips();
+    }, (error) => {
+        console.error('Firebase读取错误:', error);
+        showNotification('❌ 数据加载失败，请刷新页面');
     });
 }
 
@@ -705,52 +732,56 @@ function updatePeriodStatus() {
             statusText = `距离下次经期还有 ${daysUntilNext} 天`;
         }
     }
-        } else if (daysUntilNext <= 0) {
-            // 已经过了预计日期
-            currentStatus = 'premenstrual';
-            daysText = `延迟 ${Math.abs(daysUntilNext)} 天`;
-            statusText = '经期可能即将开始';
-        } else if (daysUntilNext <= 3) {
-            // 提前3天提醒
-            currentStatus = 'premenstrual';
-            daysText = `${daysUntilNext} 天后`;
-            statusText = `⚠️ 提醒：预计 ${daysUntilNext} 天后来经期`;
-        } else if (daysSinceLastPeriod >= Math.floor(cycleLength / 2 - 2) && 
-                   daysSinceLastPeriod <= Math.floor(cycleLength / 2 + 2)) {
-            // 排卵期
-            currentStatus = 'ovulation';
-            daysText = `${daysUntilNext} 天后`;
-            statusText = `排卵期，距离下次经期还有 ${daysUntilNext} 天`;
-        } else if (currentStatus !== 'safe' || !specialReminder) {
-            // 普通安全期（不是第8/9天的特殊安全期）
-            currentStatus = 'safe';
-            daysText = `${daysUntilNext} 天后`;
-            statusText = `距离下次经期还有 ${daysUntilNext} 天`;
-        }
-    }
 
     // 更新UI
-    const config = statusConfig[currentStatus];
-    
-    // 更新SVG图标
-    const iconContainer = document.getElementById('statusIconContainer');
-    iconContainer.innerHTML = statusIcons[config.icon];
-    
-    document.getElementById('statusTitle').textContent = config.title;
-    document.getElementById('statusText').textContent = statusText;
-    document.getElementById('statusDays').textContent = daysText;
-    
-    const statusCard = document.getElementById('periodStatusCard');
-    statusCard.style.background = config.bgGradient;
-    statusCard.style.borderColor = config.color + '80';
-    
-    // 显示特殊提醒（第7天/第9天）
-    const reminderEl = document.getElementById('specialReminder');
-    if (specialReminder) {
-        reminderEl.style.display = 'flex';
-        reminderEl.querySelector('.reminder-text').textContent = specialReminder;
-    } else {
-        reminderEl.style.display = 'none';
+    try {
+        const config = statusConfig[currentStatus];
+        
+        if (!config) {
+            console.error('未找到状态配置:', currentStatus);
+            return;
+        }
+        
+        // 更新SVG图标
+        const iconContainer = document.getElementById('statusIconContainer');
+        if (iconContainer && statusIcons[config.icon]) {
+            iconContainer.innerHTML = statusIcons[config.icon];
+        }
+        
+        const statusTitle = document.getElementById('statusTitle');
+        const statusTextEl = document.getElementById('statusText');
+        const statusDaysEl = document.getElementById('statusDays');
+        
+        if (statusTitle) statusTitle.textContent = config.title;
+        if (statusTextEl) statusTextEl.textContent = statusText;
+        if (statusDaysEl) statusDaysEl.textContent = daysText;
+        
+        const statusCard = document.getElementById('periodStatusCard');
+        if (statusCard) {
+            statusCard.style.background = config.bgGradient;
+            statusCard.style.borderColor = config.color + '80';
+        }
+        
+        // 显示特殊提醒
+        const reminderEl = document.getElementById('specialReminder');
+        if (reminderEl) {
+            if (specialReminder) {
+                reminderEl.style.display = 'flex';
+                const reminderText = reminderEl.querySelector('.reminder-text');
+                if (reminderText) {
+                    reminderText.textContent = specialReminder;
+                }
+            } else {
+                reminderEl.style.display = 'none';
+            }
+        }
+    } catch (error) {
+        console.error('更新UI错误:', error);
+        // 显示错误状态
+        const statusTitle = document.getElementById('statusTitle');
+        const statusTextEl = document.getElementById('statusText');
+        if (statusTitle) statusTitle.textContent = '加载失败';
+        if (statusTextEl) statusTextEl.textContent = '请刷新页面重试';
     }
 }
 
