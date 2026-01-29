@@ -57,30 +57,30 @@
         <div class="container">
             <div class="setup-card">
                 <div class="setup-icon">🔐</div>
-                <div class="setup-title">设置你们的专属ID</div>
+                <div class="setup-title">🔐 身份验证</div>
                 <div class="setup-text">
-                    输入一个独特的ID，你和她都用这个ID，<br>
-                    数据就能实时同步啦！💕
+                    请输入你的密钥来确认身份<br>
+                    💕 男生和女生有不同的密钥
                 </div>
                 
                 <input 
-                    type="text" 
-                    id="coupleIdInput" 
+                    type="password" 
+                    id="userKeyInput" 
                     class="couple-id-input" 
-                    placeholder="例如：xiaoming-xiaohong"
-                    maxlength="50"
+                    placeholder="输入你的密钥"
+                    maxlength="20"
                 >
                 
-                <button class="btn" onclick="saveCoupleId()">
-                    💝 开始使用
+                <button class="btn" onclick="verifyUserKey()">
+                    💝 进入应用
                 </button>
                 
                 <div class="note">
                     💡 提示：<br>
-                    • 这个ID只有你们知道<br>
-                    • 两个人要用<strong>同一个ID</strong>才能同步<br>
-                    • 建议使用字母+数字组合，更安全<br>
-                    • 配置后可以随时更改
+                    • 👨 男生密钥：shi<br>
+                    • 👩 女生密钥：ting<br>
+                    • 输入对应密钥后自动识别身份<br>
+                    • 两个人的数据会实时同步
                 </div>
             </div>
         </div>
@@ -92,6 +92,10 @@
             <!-- 头部 -->
             <div class="glass-card">
                 <div class="header">
+                    <div class="user-role-badge" id="userRoleBadge">
+                        <span class="role-icon" id="roleIcon">💑</span>
+                        <span class="role-text" id="roleText">加载中...</span>
+                    </div>
                     <h1>💑 我们的小秘密 💑</h1>
                     <div class="sync-status">
                         <div class="sync-dot"></div>
@@ -141,7 +145,7 @@
                     </div>
 
                     <!-- 快速操作 -->
-                    <div class="quick-actions">
+                    <div class="quick-actions" id="quickActions">
                         <button class="action-btn primary" onclick="showRecordStartModal()">
                             <span class="btn-icon">📅</span>
                             <span class="btn-text">记录经期开始</span>
@@ -150,6 +154,15 @@
                             <span class="btn-icon">✓</span>
                             <span class="btn-text">记录经期结束</span>
                         </button>
+                    </div>
+                    
+                    <!-- 男生查看提示 -->
+                    <div class="male-view-hint" id="maleViewHint" style="display: none;">
+                        <div class="hint-icon">👀</div>
+                        <div class="hint-text">
+                            你可以查看她的生理期状态<br>
+                            但只有她可以记录经期数据
+                        </div>
                     </div>
 
                     <!-- 周期设置 -->

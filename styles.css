@@ -158,6 +158,45 @@ select {
 .header {
     text-align: center;
     margin-bottom: 30px;
+    position: relative;
+}
+
+/* 角色徽章 */
+.user-role-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, rgba(255, 105, 180, 0.3), rgba(135, 206, 250, 0.3));
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.role-icon {
+    font-size: 20px;
+}
+
+.role-text {
+    font-size: 14px;
+}
+
+/* 男生角色样式 */
+.user-role-badge.male {
+    background: linear-gradient(135deg, rgba(74, 144, 226, 0.4), rgba(59, 130, 246, 0.4));
+    border-color: rgba(74, 144, 226, 0.5);
+}
+
+/* 女生角色样式 */
+.user-role-badge.female {
+    background: linear-gradient(135deg, rgba(255, 105, 180, 0.4), rgba(255, 20, 147, 0.4));
+    border-color: rgba(255, 105, 180, 0.5);
 }
 
 .header h1 {
@@ -728,6 +767,30 @@ select {
     grid-template-columns: 1fr 1fr;
     gap: 15px;
     margin-bottom: 25px;
+}
+
+/* 男生查看提示 */
+.male-view-hint {
+    background: rgba(74, 144, 226, 0.2);
+    border: 2px solid rgba(74, 144, 226, 0.4);
+    border-radius: 20px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 25px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.hint-icon {
+    font-size: 40px;
+}
+
+.hint-text {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    line-height: 1.6;
 }
 
 .action-btn {

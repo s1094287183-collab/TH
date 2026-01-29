@@ -10,7 +10,7 @@ const firebaseConfig = {
 };
 
 // 全局变量
-let db, coupleId, userId;
+let db, coupleId, userId, userRole, userGender;
 let peer, localStream;
 let currentCall = null;
 let isMuted = false;
@@ -20,6 +20,15 @@ let periodData = {
     currentPeriod: null
 };
 
+// 密钥配置
+const USER_KEYS = {
+    male: 'shi',    // 男生密钥
+    female: 'ting'  // 女生密钥
+};
+
+// 固定的情侣ID
+const COUPLE_ID = 'shiting-couple-2024';
+
 // ==================== 初始化 ====================
 
 window.onload = function() {
@@ -27,22 +36,30 @@ window.onload = function() {
     firebase.initializeApp(firebaseConfig);
     db = firebase.database();
 
-    // 检查配置
-    coupleId = localStorage.getItem('coupleId');
-    if (!coupleId) {
+    // 检查用户角色和密钥
+    userRole = localStorage.getItem('userRole');
+    userGender = localStorage.getItem('userGender');
+    
+    if (!userRole || !userGender) {
         showSetupScreen();
         return;
     }
 
-    // 生成/获取用户ID
+    // 使用固定的情侣ID
+    coupleId = COUPLE_ID;
+
+    // 生成/获取用户ID（基于角色）
     userId = localStorage.getItem('userId');
     if (!userId) {
-        userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        userId = userRole + '_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         localStorage.setItem('userId', userId);
     }
 
     // 显示主应用
     showMainApp();
+    
+    // 更新角色显示
+    updateRoleBadge();
 
     // 初始化功能
     initOnlineStatus();
@@ -65,9 +82,108 @@ function showSetupScreen() {
 function showMainApp() {
     document.getElementById('setupScreen').style.display = 'none';
     document.getElementById('mainApp').style.display = 'block';
+    
+    // 根据角色控制界面
+    applyRolePermissions();
 }
 
-// 保存专属ID
+// 应用角色权限
+function applyRolePermissions() {
+    if (userRole === 'male') {
+        // 男生：只能查看，不能记录
+        document.getElementById('quickActions').style.display = 'none';
+        document.getElementById('maleViewHint').style.display = 'flex';
+        
+        // 禁用周期调整（可选）
+        const cycleSlider = document.getElementById('cycleSlider');
+        if (cycleSlider) {
+            cycleSlider.disabled = true;
+            cycleSlider.style.opacity = '0.5';
+            cycleSlider.style.cursor = 'not-allowed';
+        }
+    } else if (userRole === 'female') {
+        // 女生：可以记录和修改
+        document.getElementById('quickActions').style.display = 'grid';
+        document.getElementById('maleViewHint').style.display = 'none';
+    }
+}
+
+// 验证用户密钥
+function verifyUserKey() {
+    const keyInput = document.getElementById('userKeyInput');
+    const key = keyInput.value.trim().toLowerCase();
+    
+    if (!key) {
+        alert('请输入密钥！');
+        return;
+    }
+    
+    // 验证密钥
+    if (key === USER_KEYS.male) {
+        // 男生
+        userRole = 'male';
+        userGender = '男生';
+        localStorage.setItem('userRole', userRole);
+        localStorage.setItem('userGender', userGender);
+        
+        // 使用固定的情侣ID
+        coupleId = COUPLE_ID;
+        localStorage.setItem('coupleId', coupleId);
+        
+        // 生成用户ID
+        userId = 'male_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('userId', userId);
+        
+        showNotification('✅ 欢迎回来，帅哥！');
+        
+        // 重新加载页面以初始化
+        location.reload();
+        
+    } else if (key === USER_KEYS.female) {
+        // 女生
+        userRole = 'female';
+        userGender = '女生';
+        localStorage.setItem('userRole', userRole);
+        localStorage.setItem('userGender', userGender);
+        
+        // 使用固定的情侣ID
+        coupleId = COUPLE_ID;
+        localStorage.setItem('coupleId', coupleId);
+        
+        // 生成用户ID
+        userId = 'female_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('userId', userId);
+        
+        showNotification('✅ 欢迎回来，宝贝！');
+        
+        // 重新加载页面以初始化
+        location.reload();
+        
+    } else {
+        alert('❌ 密钥错误！\n\n男生请输入：shi\n女生请输入：ting');
+        keyInput.value = '';
+        keyInput.focus();
+    }
+}
+
+// 更新角色徽章显示
+function updateRoleBadge() {
+    const badge = document.getElementById('userRoleBadge');
+    const icon = document.getElementById('roleIcon');
+    const text = document.getElementById('roleText');
+    
+    if (userRole === 'male') {
+        badge.classList.add('male');
+        icon.textContent = '👨';
+        text.textContent = '男生（Shi）';
+    } else if (userRole === 'female') {
+        badge.classList.add('female');
+        icon.textContent = '👩';
+        text.textContent = '女生（Ting）';
+    }
+}
+
+// 旧函数保留（兼容性）
 function saveCoupleId() {
     const input = document.getElementById('coupleIdInput');
     const id = input.value.trim();
