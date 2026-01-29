@@ -146,14 +146,19 @@
 
                     <!-- 快速操作 -->
                     <div class="quick-actions" id="quickActions">
-                        <button class="action-btn primary" onclick="showRecordStartModal()">
+                        <button class="action-btn primary" onclick="showRecordStartModal()" style="grid-column: 1 / -1;">
                             <span class="btn-icon">📅</span>
                             <span class="btn-text">记录经期开始</span>
                         </button>
-                        <button class="action-btn secondary" onclick="showRecordEndModal()">
-                            <span class="btn-icon">✓</span>
-                            <span class="btn-text">记录经期结束</span>
-                        </button>
+                    </div>
+                    
+                    <!-- 自动结束提示 -->
+                    <div class="auto-end-hint">
+                        <div class="hint-icon">⏰</div>
+                        <div class="hint-text">
+                            经期将在第8天自动结束<br>
+                            无需手动记录结束日期
+                        </div>
                     </div>
                     
                     <!-- 男生查看提示 -->

@@ -766,7 +766,31 @@ select {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 15px;
+    margin-bottom: 15px;
+}
+
+/* 自动结束提示 */
+.auto-end-hint {
+    background: rgba(255, 215, 0, 0.15);
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-radius: 15px;
+    padding: 15px;
+    text-align: center;
     margin-bottom: 25px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.auto-end-hint .hint-icon {
+    font-size: 24px;
+}
+
+.auto-end-hint .hint-text {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 13px;
+    line-height: 1.6;
 }
 
 /* 男生查看提示 */

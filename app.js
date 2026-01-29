@@ -522,6 +522,46 @@ function sendPeriodEndNotification() {
     });
 }
 
+// 自动结束经期（第8天）
+function autoEndPeriod(startDate) {
+    // 检查是否已经自动结束过
+    const autoEndKey = 'autoEnded_' + startDate.toISOString();
+    if (localStorage.getItem(autoEndKey)) {
+        // 已经自动结束过，不重复操作
+        return;
+    }
+    
+    // 计算第8天的日期（开始日期 + 7天）
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 7);
+    endDate.setHours(0, 0, 0, 0);
+    
+    // 更新数据库
+    const updates = {};
+    
+    // 1. 将当前周期添加到历史记录
+    if (!periodData.records) {
+        periodData.records = [];
+    }
+    periodData.records.push({
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString()
+    });
+    updates['records'] = periodData.records;
+    
+    // 2. 清除当前周期
+    updates['currentPeriod'] = null;
+    
+    // 保存到数据库
+    db.ref(`couples/${coupleId}/period`).update(updates).then(() => {
+        console.log('经期已自动结束（第8天）');
+        // 标记已自动结束
+        localStorage.setItem(autoEndKey, 'true');
+    }).catch(err => {
+        console.error('自动结束经期失败:', err);
+    });
+}
+
 function updatePeriodStatus() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -568,68 +608,63 @@ function updatePeriodStatus() {
     let currentStatus = 'unknown';
     let daysText = '';
     let statusText = '暂无数据，请记录经期开始时间';
-    let specialReminder = ''; // 特殊提醒（第7/9天）
+    let specialReminder = ''; // 特殊温馨话语
+
+    // 每日温馨话语配置
+    const dailyMessages = {
+        1: '💕 今天你是脆弱限定版，我得贴身看着才放心',
+        2: '💝 你现在有任性特权，我只负责更喜欢你',
+        3: '🤗 别动，让我这样搂一会儿，我有点上瘾',
+        4: '😘 感觉你开始回血了，我是不是可以多亲两下了？',
+        5: '🌟 副本快结束了，我的女朋友要恢复迷人模式了',
+        6: '💋 现在的你，看起来很好亲的样子',
+        7: '🎉 欢迎我的满血宝贝回来，我都等好久了',
+        8: '💑 这几天辛苦了，接下来换我让你开心'
+    };
 
     // 检查是否正在经期
     if (periodData.currentPeriod && periodData.currentPeriod.startDate) {
         const startDate = new Date(periodData.currentPeriod.startDate);
         startDate.setHours(0, 0, 0, 0);
         const daysSinceStart = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+        const periodDay = daysSinceStart + 1;
         
-        if (!periodData.currentPeriod.endDate) {
-            // 正在经期中
-            const periodDay = daysSinceStart + 1;
+        if (periodDay >= 1 && periodDay <= 7) {
+            // 第1-7天：显示每日温馨话语
+            currentStatus = 'period';
+            daysText = `第 ${periodDay} 天`;
+            statusText = '经期进行中';
+            specialReminder = dailyMessages[periodDay];
             
-            if (periodDay <= 6) {
-                // 第1-6天：正常经期
-                currentStatus = 'period';
-                daysText = `第 ${periodDay} 天`;
-                statusText = '经期进行中，注意休息和保暖';
-            } else if (periodDay === 7) {
-                // 第7天：特别提醒即将进入安全期
-                currentStatus = 'period';
-                daysText = `第 ${periodDay} 天`;
-                statusText = '⚠️ 提醒：明天将进入安全期';
-                specialReminder = '💡 温馨提示：经期即将结束，明天进入安全期';
-            } else if (periodDay >= 8) {
-                // 第8天及以后：虽然没记录结束，但按8天算应该结束了
-                currentStatus = 'period';
-                daysText = `第 ${periodDay} 天`;
-                statusText = '⚠️ 经期已超过8天，建议记录结束日期';
-            }
+        } else if (periodDay === 8) {
+            // 第8天：自动结束，显示安全期
+            currentStatus = 'safe';
+            daysText = '刚结束';
+            statusText = '🎉 经期已结束，进入安全期';
+            specialReminder = dailyMessages[8];
+            
+            // 自动将经期标记为结束
+            autoEndPeriod(startDate);
+            
+        } else if (periodDay === 9) {
+            // 第9天：特别提醒可以亲密
+            currentStatus = 'safe';
+            daysText = '结束1天';
+            statusText = '💚 安全期，身体状况良好';
+            specialReminder = '💑 温馨提示：已完全恢复，可以恢复亲密生活';
+            
+            // 发送通知给男生
+            sendPeriodEndNotification();
+            
+        } else if (periodDay > 9) {
+            // 第9天之后：普通安全期
+            currentStatus = 'safe';
+            daysText = `结束${periodDay - 8}天`;
+            statusText = '安全期';
         }
     }
 
-    // 检查是否刚结束经期（第8天自动显示安全期，第9天特别提醒）
-    if (periodData.records && periodData.records.length > 0) {
-        const lastRecord = periodData.records[periodData.records.length - 1];
-        
-        // 如果有结束日期，检查是否在第8-9天
-        if (lastRecord.endDate) {
-            const endDate = new Date(lastRecord.endDate);
-            endDate.setHours(0, 0, 0, 0);
-            const daysSinceEnd = Math.floor((today - endDate) / (1000 * 60 * 60 * 24));
-            
-            if (daysSinceEnd === 0) {
-                // 今天是结束日（第8天）- 自动显示安全期
-                currentStatus = 'safe';
-                daysText = '刚结束';
-                statusText = '🎉 经期已结束，进入安全期';
-                specialReminder = '💚 已进入安全期，身体已恢复正常';
-            } else if (daysSinceEnd === 1) {
-                // 经期结束后第1天（第9天）- 特别提醒可以亲密
-                currentStatus = 'safe';
-                daysText = '结束1天';
-                statusText = '💚 安全期，身体状况良好';
-                specialReminder = '💑 温馨提示：已完全恢复，可以恢复亲密生活';
-                
-                // 发送一次性通知给男生
-                sendPeriodEndNotification();
-            }
-        }
-    }
-
-    // 计算下次经期（如果不在经期中且没有特殊状态）
+    // 计算下次经期（如果不在经期中）
     if (periodData.records && periodData.records.length > 0 && currentStatus !== 'period') {
         const lastRecord = periodData.records[periodData.records.length - 1];
         const lastStartDate = new Date(lastRecord.startDate);
@@ -642,12 +677,34 @@ function updatePeriodStatus() {
         const daysUntilNext = Math.floor((nextPeriodDate - today) / (1000 * 60 * 60 * 24));
         const daysSinceLastPeriod = Math.floor((today - lastStartDate) / (1000 * 60 * 60 * 24));
         
-        // 如果已经有特殊提醒（第8/9天），保留安全期状态但更新预测信息
-        if (specialReminder) {
-            // 保持当前状态和提醒，只更新距离下次的天数
+        // 如果已经有特殊提醒（第8/9天），保留但添加预测信息
+        if (specialReminder && (daysText === '刚结束' || daysText.includes('结束'))) {
             if (daysUntilNext > 0) {
                 statusText += `，距离下次经期还有 ${daysUntilNext} 天`;
             }
+        } else if (daysUntilNext <= 0) {
+            // 已经过了预计日期
+            currentStatus = 'premenstrual';
+            daysText = `延迟 ${Math.abs(daysUntilNext)} 天`;
+            statusText = '经期可能即将开始';
+        } else if (daysUntilNext <= 3) {
+            // 提前3天提醒
+            currentStatus = 'premenstrual';
+            daysText = `${daysUntilNext} 天后`;
+            statusText = `⚠️ 提醒：预计 ${daysUntilNext} 天后来经期`;
+        } else if (daysSinceLastPeriod >= Math.floor(cycleLength / 2 - 2) && 
+                   daysSinceLastPeriod <= Math.floor(cycleLength / 2 + 2)) {
+            // 排卵期
+            currentStatus = 'ovulation';
+            daysText = `${daysUntilNext} 天后`;
+            statusText = `排卵期，距离下次经期还有 ${daysUntilNext} 天`;
+        } else if (!specialReminder) {
+            // 普通安全期
+            currentStatus = 'safe';
+            daysText = `${daysUntilNext} 天后`;
+            statusText = `距离下次经期还有 ${daysUntilNext} 天`;
+        }
+    }
         } else if (daysUntilNext <= 0) {
             // 已经过了预计日期
             currentStatus = 'premenstrual';
